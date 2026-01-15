@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/restaurant.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'menu_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
   List<Restaurant> _restaurants = [];
   bool _isLoading = true;
 
@@ -32,6 +35,33 @@ class _HomeScreenState extends State<HomeScreen> {
       _restaurants = restaurants;
       _isLoading = false;
     });
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _authService.logout();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -57,6 +87,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (context) => const OrdersScreen()),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Logout',
           ),
         ],
       ),
