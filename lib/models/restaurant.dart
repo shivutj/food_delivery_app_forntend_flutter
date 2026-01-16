@@ -1,3 +1,4 @@
+// lib/models/restaurant.dart
 class Restaurant {
   final String id;
   final String name;
@@ -13,10 +14,10 @@ class Restaurant {
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
-      id: json['_id'],
-      name: json['name'],
-      image: json['image'] ?? 'https://via.placeholder.com/150',
-      rating: (json['rating'] ?? 4.0).toDouble(),
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      image: json['image'] ?? '',
+      rating: (json['rating'] ?? 0).toDouble(),
     );
   }
 }

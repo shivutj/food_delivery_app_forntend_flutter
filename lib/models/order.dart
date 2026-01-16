@@ -1,3 +1,4 @@
+// lib/models/order.dart
 class Order {
   final String id;
   final String userId;
@@ -17,14 +18,15 @@ class Order {
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
-      id: json['_id'],
-      userId: json['user_id'],
-      items: (json['items'] as List)
-          .map((i) => OrderItem.fromJson(i))
-          .toList(),
-      total: (json['total']).toDouble(),
-      status: json['status'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['_id'] ?? '',
+      userId: json['user_id'] ?? '',
+      items: (json['items'] as List?)
+              ?.map((item) => OrderItem.fromJson(item))
+              .toList() ??
+          [],
+      total: (json['total'] ?? 0).toDouble(),
+      status: json['status'] ?? '',
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 }
@@ -44,10 +46,10 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      menuId: json['menu_id'],
-      name: json['name'],
-      price: (json['price']).toDouble(),
-      quantity: json['quantity'],
+      menuId: json['menu_id'] ?? '',
+      name: json['name'] ?? '',
+      price: (json['price'] ?? 0).toDouble(),
+      quantity: json['quantity'] ?? 0,
     );
   }
 

@@ -1,48 +1,131 @@
-// lib/services/api_service.dart - Updated with admin functions
+// lib/services/api_service.dart - COMPLETE WORKING VERSION
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
+import '../config/api_config.dart';
 import '../models/restaurant.dart';
-import '../models/menu.dart';
+import '../models/menu_item.dart';
 import '../models/order.dart';
 import 'auth_service.dart';
-import '../config/api_config.dart';
 
 class ApiService {
   final String baseUrl = ApiConfig.baseUrl;
   final AuthService _authService = AuthService();
 
+  // ==================== RESTAURANTS ====================
+  
   Future<List<Restaurant>> getRestaurants() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/restaurants'));
+      
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Restaurant.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('Error fetching restaurants: $e');
+      print('Get restaurants error: $e');
       return [];
     }
   }
 
+  Future<bool> updateRestaurantImage(String restaurantId, String imageUrl) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/restaurants/$restaurantId/image'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'image': imageUrl}),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Update restaurant image error: $e');
+      return false;
+    }
+  }
+
+  // ==================== MENU ====================
+  
   Future<List<MenuItem>> getMenu(String restaurantId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
       );
+      
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => MenuItem.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('Error fetching menu: $e');
+      print('Get menu error: $e');
       return [];
     }
   }
 
-  Future<Map<String, dynamic>> placeOrder(
-      List<OrderItem> items, double total) async {
+  Future<bool> addMenuItem(MenuItem menuItem) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/menu'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(menuItem.toJson()),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Add menu error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateMenuItem(String menuId, MenuItem menuItem) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/menu/$menuId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(menuItem.toJson()),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Update menu error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteMenuItem(String menuId) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/menu/$menuId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Delete menu error: $e');
+      return false;
+    }
+  }
+
+  // ==================== ORDERS ====================
+  
+  Future<bool> placeOrder(List<Map<String, dynamic>> items, double total) async {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
@@ -52,18 +135,15 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'items': items.map((i) => i.toJson()).toList(),
+          'items': items,
           'total': total,
         }),
       );
-
-      if (response.statusCode == 201) {
-        return {'success': true, 'message': 'Order placed successfully'};
-      } else {
-        return {'success': false, 'message': 'Failed to place order'};
-      }
+      
+      return response.statusCode == 201;
     } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
+      print('Place order error: $e');
+      return false;
     }
   }
 
@@ -72,42 +152,44 @@ class ApiService {
       final token = await _authService.getToken();
       final response = await http.get(
         Uri.parse('$baseUrl/orders/history'),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
-
+      
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Order.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('Error fetching orders: $e');
+      print('Get order history error: $e');
       return [];
     }
   }
 
-  // Admin functions
   Future<List<Order>> getAllOrders() async {
     try {
       final token = await _authService.getToken();
       final response = await http.get(
         Uri.parse('$baseUrl/orders/all'),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
-
+      
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Order.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('Error fetching all orders: $e');
+      print('Get all orders error: $e');
       return [];
     }
   }
 
-  Future<Map<String, dynamic>> updateOrderStatus(
-      String orderId, String status) async {
+  Future<bool> updateOrderStatus(String orderId, String status) async {
     try {
       final token = await _authService.getToken();
       final response = await http.patch(
@@ -118,60 +200,88 @@ class ApiService {
         },
         body: jsonEncode({'status': status}),
       );
-
-      if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Status updated'};
-      } else {
-        return {'success': false, 'message': 'Failed to update status'};
-      }
+      
+      return response.statusCode == 200;
     } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
+      print('Update order status error: $e');
+      return false;
     }
   }
 
-  Future<Map<String, dynamic>> addMenuItem(String restaurantId, String name,
-      double price, String category, String image) async {
+  // ==================== IMAGE UPLOAD ====================
+  
+  Future<String?> uploadImage(File imageFile) async {
     try {
       final token = await _authService.getToken();
-      final response = await http.post(
-        Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'name': name,
-          'price': price,
-          'category': category,
-          'image': image,
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        return {'success': true, 'message': 'Menu item added'};
-      } else {
-        return {'success': false, 'message': 'Failed to add item'};
+      
+      if (token == null || token.isEmpty) {
+        print('Upload error: No authentication token');
+        return null;
       }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
-    }
-  }
 
-  Future<Map<String, dynamic>> deleteMenuItem(String menuId) async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/menu/$menuId'),
-        headers: {'Authorization': 'Bearer $token'},
+      print('Starting upload...');
+      print('File path: ${imageFile.path}');
+      print('Base URL: $baseUrl');
+      
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/upload'),
       );
+      
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      // Get proper file extension and MIME type
+      final filename = imageFile.path.split('/').last;
+      MediaType? contentType;
+      
+      if (filename.toLowerCase().endsWith('.png')) {
+        contentType = MediaType('image', 'png');
+      } else if (filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.jpeg')) {
+        contentType = MediaType('image', 'jpeg');
+      } else if (filename.toLowerCase().endsWith('.gif')) {
+        contentType = MediaType('image', 'gif');
+      } else if (filename.toLowerCase().endsWith('.webp')) {
+        contentType = MediaType('image', 'webp');
+      }
+      
+      print('File name: $filename');
+      print('Content type: $contentType');
+      
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          filename: filename,
+          contentType: contentType,
+        ),
+      );
+
+      print('Sending request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Item deleted'};
+        try {
+          final jsonData = json.decode(response.body);
+          final imageUrl = jsonData['imageUrl'];
+          print('Upload successful: $imageUrl');
+          return imageUrl;
+        } catch (e) {
+          print('JSON parse error: $e');
+          print('Response was: ${response.body}');
+          return null;
+        }
       } else {
-        return {'success': false, 'message': 'Failed to delete item'};
+        print('Upload failed with status: ${response.statusCode}');
+        print('Error response: ${response.body}');
+        return null;
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
+      print('Upload error: $e');
+      return null;
     }
   }
 }

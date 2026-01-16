@@ -1,50 +1,52 @@
-import 'package:flutter/foundation.dart';
-import '../models/menu.dart';
-import '../models/order.dart';
+// lib/providers/cart_provider.dart - FIXED
+import 'package:flutter/material.dart';
+import '../models/menu_item.dart'; // CHANGED: was menu.dart
+
+class CartItem {
+  final MenuItem menuItem;
+  int quantity;
+
+  CartItem({required this.menuItem, this.quantity = 1});
+}
 
 class CartProvider with ChangeNotifier {
   final Map<String, CartItem> _items = {};
 
-  Map<String, CartItem> get items => {..._items};
+  Map<String, CartItem> get items => _items;
 
   int get itemCount => _items.length;
 
   double get totalAmount {
     double total = 0.0;
     _items.forEach((key, cartItem) {
-      total += cartItem.price * cartItem.quantity;
+      total += cartItem.menuItem.price * cartItem.quantity;
     });
     return total;
   }
 
   void addItem(MenuItem menuItem) {
     if (_items.containsKey(menuItem.id)) {
-      _items.update(
-        menuItem.id,
-        (existing) => CartItem(
-          id: existing.id,
-          name: existing.name,
-          price: existing.price,
-          quantity: existing.quantity + 1,
-        ),
-      );
+      _items[menuItem.id]!.quantity++;
     } else {
-      _items.putIfAbsent(
-        menuItem.id,
-        () => CartItem(
-          id: menuItem.id,
-          name: menuItem.name,
-          price: menuItem.price,
-          quantity: 1,
-        ),
-      );
+      _items[menuItem.id] = CartItem(menuItem: menuItem);
     }
     notifyListeners();
   }
 
-  void removeItem(String id) {
-    _items.remove(id);
+  void removeItem(String menuItemId) {
+    _items.remove(menuItemId);
     notifyListeners();
+  }
+
+  void updateQuantity(String menuItemId, int quantity) {
+    if (_items.containsKey(menuItemId)) {
+      if (quantity > 0) {
+        _items[menuItemId]!.quantity = quantity;
+      } else {
+        _items.remove(menuItemId);
+      }
+      notifyListeners();
+    }
   }
 
   void clear() {
@@ -52,28 +54,15 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  List<OrderItem> getOrderItems() {
-    return _items.values
-        .map((item) => OrderItem(
-              menuId: item.id,
-              name: item.name,
-              price: item.price,
-              quantity: item.quantity,
-            ))
-        .toList();
+  // Get order items in the format expected by the API
+  List<Map<String, dynamic>> getOrderItems() {
+    return _items.values.map((cartItem) {
+      return {
+        'menu_id': cartItem.menuItem.id,
+        'name': cartItem.menuItem.name,
+        'price': cartItem.menuItem.price,
+        'quantity': cartItem.quantity,
+      };
+    }).toList();
   }
-}
-
-class CartItem {
-  final String id;
-  final String name;
-  final double price;
-  final int quantity;
-
-  CartItem({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.quantity,
-  });
 }

@@ -1,3 +1,4 @@
+// lib/models/user.dart
 class User {
   final String id;
   final String name;
@@ -13,10 +14,10 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      role: json['role'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      role: json['role'] ?? 'customer',
     );
   }
 }

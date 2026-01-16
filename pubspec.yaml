@@ -1,6 +1,5 @@
 name: food_delivery_app
-description: A Food Delivery Mobile Application
-
+description: A food delivery mobile application
 publish_to: "none"
 version: 1.0.0+1
 
@@ -8,17 +7,21 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
+  http_parser: ^4.0.2
   flutter:
     sdk: flutter
-  http: ^1.1.0
-  shared_preferences: ^2.2.2
-  provider: ^6.1.1
-  intl: ^0.18.1  
+
+  cupertino_icons: ^1.0.2
+  http: ^1.2.0 # Keep only this one (higher version)
+  provider: ^6.0.5
+  shared_preferences: ^2.2.0
+  image_picker: ^1.0.7 # For image upload
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
